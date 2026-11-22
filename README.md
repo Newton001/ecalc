@@ -50,7 +50,26 @@ $ ecalc rcolor green blue gold red
 5.6 Ω ±2%
 ```
 
-Invalid input prints an error and exits with status 2.
+### Machine-readable output: `--json`
+
+Every subcommand accepts `--json` to print a single JSON object instead of
+the human-readable line:
+
+```console
+$ ecalc divider --json 12 10000 4700
+{"vin": 12.0, "r1": 10000.0, "r2": 4700.0, "vout": 3.836734693877551}
+$ ecalc dbm --json --dbm 20
+{"dbm": 20.0, "mw": 100.0}
+$ ecalc rcolor --json yellow violet red gold
+{"bands": ["yellow", "violet", "red", "gold"], "ohms": 4700, "tolerance_percent": 5.0, "formatted": "4.7 kΩ ±5%"}
+```
+
+Values are full-precision numbers (not rounded as in text output); `ohms` is
+in Ω and `tolerance_percent` in %. `rcolor` reports band names normalised
+(lower-case, aliases resolved).
+
+Invalid input prints an error to stderr and exits with status 2, with or
+without `--json` (nothing is written to stdout).
 
 ## Development
 

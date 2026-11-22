@@ -1,6 +1,7 @@
 """Command-line interface for ecalc."""
 
 import argparse
+import json
 import sys
 
 from ecalc import __version__, calc
@@ -8,19 +9,34 @@ from ecalc import __version__, calc
 
 def _cmd_divider(args):
     vout = calc.divider(args.vin, args.r1, args.r2)
-    print(f"Vout = {vout:.6g} V")
+    if args.json:
+        return {"vin": args.vin, "r1": args.r1, "r2": args.r2, "vout": vout}
+    return f"Vout = {vout:.6g} V"
 
 
 def _cmd_dbm(args):
     if args.dbm is not None:
-        print(f"{args.dbm:g} dBm = {calc.dbm_to_mw(args.dbm):.6g} mW")
+        dbm, mw = args.dbm, calc.dbm_to_mw(args.dbm)
+        text = f"{dbm:g} dBm = {mw:.6g} mW"
     else:
-        print(f"{args.mw:g} mW = {calc.mw_to_dbm(args.mw):.6g} dBm")
+        mw, dbm = args.mw, calc.mw_to_dbm(args.mw)
+        text = f"{mw:g} mW = {dbm:.6g} dBm"
+    if args.json:
+        return {"dbm": dbm, "mw": mw}
+    return text
 
 
 def _cmd_rcolor(args):
     ohms, tol = calc.rcolor(args.bands)
-    print(f"{calc.format_ohms(ohms)} ±{tol:g}%")
+    formatted = f"{calc.format_ohms(ohms)} ±{tol:g}%"
+    if args.json:
+        return {
+            "bands": [calc.normalize_colour(b) for b in args.bands],
+            "ohms": ohms,
+            "tolerance_percent": tol,
+            "formatted": formatted,
+        }
+    return formatted
 
 
 def build_parser():
@@ -30,19 +46,25 @@ def build_parser():
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
-    p = sub.add_parser("divider", help="voltage divider: Vin, R1, R2 -> Vout")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--json", action="store_true",
+                        help="print the result as a JSON object")
+
+    p = sub.add_parser("divider", parents=[common],
+                       help="voltage divider: Vin, R1, R2 -> Vout")
     p.add_argument("vin", type=float, help="input voltage (V)")
     p.add_argument("r1", type=float, help="top resistor, Vin to Vout (Ω)")
     p.add_argument("r2", type=float, help="bottom resistor, Vout to ground (Ω)")
     p.set_defaults(func=_cmd_divider)
 
-    p = sub.add_parser("dbm", help="convert dBm <-> mW")
+    p = sub.add_parser("dbm", parents=[common], help="convert dBm <-> mW")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--dbm", type=float, metavar="DBM", help="convert dBm to mW")
     g.add_argument("--mw", type=float, metavar="MW", help="convert mW to dBm")
     p.set_defaults(func=_cmd_dbm)
 
-    p = sub.add_parser("rcolor", help="4-band resistor colour code -> ohms ± tolerance")
+    p = sub.add_parser("rcolor", parents=[common],
+                       help="4-band resistor colour code -> ohms ± tolerance")
     p.add_argument("bands", nargs=4, metavar="BAND",
                    help="band colours: digit digit multiplier tolerance")
     p.set_defaults(func=_cmd_rcolor)
@@ -54,9 +76,13 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        args.func(args)
+        result = args.func(args)
+        if args.json:
+            # allow_nan=False: NaN/Infinity aren't valid JSON, so fail loudly.
+            result = json.dumps(result, allow_nan=False, ensure_ascii=False)
     except ValueError as exc:
         parser.exit(2, f"ecalc {args.command}: error: {exc}\n")
+    print(result)
     return 0
 
 
