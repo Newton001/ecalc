@@ -71,3 +71,46 @@ def format_ohms(ohms):
         if ohms >= factor:
             return f"{ohms / factor:g} {prefix}Ω"
     return f"{ohms:g} Ω"
+
+
+E12 = (1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2)
+
+
+def e12_ceil(ohms):
+    """Smallest E12 preferred value that is >= ohms."""
+    if not math.isfinite(ohms) or ohms <= 0:
+        raise ValueError("resistance must be a positive finite number")
+    exp = math.floor(math.log10(ohms))
+    mantissa = ohms / 10 ** exp
+    for v in E12 + (10.0,):
+        # small tolerance so exact E12 values aren't bumped up by float error
+        if v >= mantissa * (1 - 1e-9):
+            return float(f"{v * 10 ** exp:.2g}")
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
+def led(vsupply, vf, current_ma):
+    """Series resistor for an LED.
+
+    Returns (calculated_ohms, e12_ohms, actual_current_ma, power_w), where the
+    E12 value is rounded up (so the LED current never exceeds the target) and
+    the actual current and resistor power use that E12 value.
+    """
+    for name, value in (("supply voltage", vsupply),
+                        ("LED forward voltage", vf),
+                        ("current", current_ma)):
+        if not math.isfinite(value):
+            raise ValueError(f"{name} must be a finite number")
+    if vf <= 0:
+        raise ValueError("LED forward voltage must be greater than zero")
+    if current_ma <= 0:
+        raise ValueError("current must be greater than zero")
+    if vsupply <= vf:
+        raise ValueError(
+            "supply voltage must be greater than the LED forward voltage"
+        )
+    vdrop = vsupply - vf
+    ideal = vdrop / (current_ma / 1000)
+    r = e12_ceil(ideal)
+    current_a = vdrop / r
+    return ideal, r, current_a * 1000, vdrop * current_a
