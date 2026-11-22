@@ -37,7 +37,8 @@ def mw_to_dbm(mw):
     return 10 * math.log10(mw)
 
 
-def _norm(colour):
+def normalize_colour(colour):
+    """Lower-case a colour name and resolve aliases (gray -> grey, purple -> violet)."""
     c = colour.strip().lower()
     return ALIASES.get(c, c)
 
@@ -49,7 +50,7 @@ def rcolor(bands):
     """
     if len(bands) != 4:
         raise ValueError("expected exactly 4 colour bands")
-    b1, b2, mult, tol = (_norm(b) for b in bands)
+    b1, b2, mult, tol = (normalize_colour(b) for b in bands)
     for name, table, band in (
         ("first digit", DIGITS, b1),
         ("second digit", DIGITS, b2),
