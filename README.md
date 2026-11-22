@@ -50,6 +50,21 @@ $ ecalc rcolor green blue gold red
 5.6 Ω ±2%
 ```
 
+### `led` — LED series resistor
+
+Supply voltage (V), LED forward voltage (V) and target current (mA). The ideal
+resistance `(Vsupply − Vf) / I` is rounded **up** to the nearest E12 value, so
+the LED current never exceeds the target; the actual current and the resistor's
+power dissipation are then calculated for that E12 value.
+
+```console
+$ ecalc led 12 3.2 10
+R = 1 kΩ (E12; calculated 880 Ω)
+I = 8.8 mA, P = 77.44 mW
+```
+
+Pick a resistor rated comfortably above the reported power (e.g. 2× margin).
+
 Invalid input prints an error and exits with status 2.
 
 ## Development
