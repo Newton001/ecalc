@@ -41,8 +41,20 @@ def _cmd_rcolor(args):
 
 def _cmd_led(args):
     ideal, r, ma, watts = calc.led(args.vsupply, args.vf, args.ma)
-    print(f"R = {calc.format_ohms(r)} (E12; calculated {calc.format_ohms(round(ideal, 3))})")
-    print(f"I = {ma:.4g} mA, P = {watts * 1000:.4g} mW")
+    if args.json:
+        return {
+            "vsupply": args.vsupply,
+            "vf": args.vf,
+            "target_ma": args.ma,
+            "ideal_ohms": ideal,
+            "ohms": r,
+            "ma": ma,
+            "power_mw": watts * 1000,
+        }
+    return (
+        f"R = {calc.format_ohms(r)} (E12; calculated {calc.format_ohms(round(ideal, 3))})\n"
+        f"I = {ma:.4g} mA, P = {watts * 1000:.4g} mW"
+    )
 
 
 def build_parser():
@@ -75,7 +87,8 @@ def build_parser():
                    help="band colours: digit digit multiplier tolerance")
     p.set_defaults(func=_cmd_rcolor)
 
-    p = sub.add_parser("led", help="LED series resistor: Vsupply, Vf, mA -> E12 resistor + power")
+    p = sub.add_parser("led", parents=[common],
+                       help="LED series resistor: Vsupply, Vf, mA -> E12 resistor + power")
     p.add_argument("vsupply", type=float, help="supply voltage (V)")
     p.add_argument("vf", type=float, help="LED forward voltage (V)")
     p.add_argument("ma", type=float, help="target LED current (mA)")

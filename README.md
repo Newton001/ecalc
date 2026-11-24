@@ -50,26 +50,6 @@ $ ecalc rcolor green blue gold red
 5.6 Ω ±2%
 ```
 
-### Machine-readable output: `--json`
-
-Every subcommand accepts `--json` to print a single JSON object instead of
-the human-readable line:
-
-```console
-$ ecalc divider --json 12 10000 4700
-{"vin": 12.0, "r1": 10000.0, "r2": 4700.0, "vout": 3.836734693877551}
-$ ecalc dbm --json --dbm 20
-{"dbm": 20.0, "mw": 100.0}
-$ ecalc rcolor --json yellow violet red gold
-{"bands": ["yellow", "violet", "red", "gold"], "ohms": 4700, "tolerance_percent": 5.0, "formatted": "4.7 kΩ ±5%"}
-```
-
-Values are full-precision numbers (not rounded as in text output); `ohms` is
-in Ω and `tolerance_percent` in %. `rcolor` reports band names normalised
-(lower-case, aliases resolved).
-
-Invalid input prints an error to stderr and exits with status 2, with or
-without `--json` (nothing is written to stdout).
 ### `led` — LED series resistor
 
 Supply voltage (V), LED forward voltage (V) and target current (mA). The ideal
@@ -86,6 +66,31 @@ I = 8.8 mA, P = 77.44 mW
 Pick a resistor rated comfortably above the reported power (e.g. 2× margin).
 
 Invalid input prints an error and exits with status 2.
+
+### Machine-readable output: `--json`
+
+Every subcommand accepts `--json` to print a single JSON object instead of
+the human-readable line:
+
+```console
+$ ecalc divider --json 12 10000 4700
+{"vin": 12.0, "r1": 10000.0, "r2": 4700.0, "vout": 3.836734693877551}
+$ ecalc dbm --json --dbm 20
+{"dbm": 20.0, "mw": 100.0}
+$ ecalc rcolor --json yellow violet red gold
+{"bands": ["yellow", "violet", "red", "gold"], "ohms": 4700, "tolerance_percent": 5.0, "formatted": "4.7 kΩ ±5%"}
+$ ecalc led --json 12 3.2 10
+{"vsupply": 12.0, "vf": 3.2, "target_ma": 10.0, "ideal_ohms": 880.0, "ohms": 1000.0, "ma": 8.8, "power_mw": 77.44000000000001}
+```
+
+Values are full-precision numbers (not rounded as in text output); `ohms` is
+in Ω and `tolerance_percent` in %. `rcolor` reports band names normalised
+(lower-case, aliases resolved). For `led`, `ideal_ohms` is the exact
+`(Vsupply − Vf) / I`, `ohms` the chosen E12 value, `ma` the actual current
+through it and `power_mw` the resistor's dissipation.
+
+Invalid input prints an error to stderr and exits with status 2, with or
+without `--json` (nothing is written to stdout).
 
 ## Development
 

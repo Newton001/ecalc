@@ -49,6 +49,25 @@ def test_rcolor_json(capsys):
     }
 
 
+def test_led_json(capsys):
+    data = run_json(capsys, ["led", "--json", "12", "3.2", "10"])
+    assert set(data) == {
+        "vsupply", "vf", "target_ma", "ideal_ohms", "ohms", "ma", "power_mw"
+    }
+    assert data["vsupply"] == 12 and data["vf"] == 3.2 and data["target_ma"] == 10
+    assert data["ideal_ohms"] == pytest.approx(880)
+    assert data["ohms"] == pytest.approx(1000)
+    assert data["ma"] == pytest.approx(8.8)
+    assert data["power_mw"] == pytest.approx(77.44)
+
+
+def test_led_json_exact_e12_value(capsys):
+    assert run_json(capsys, ["led", "5", "2", "20", "--json"]) == pytest.approx(
+        {"vsupply": 5, "vf": 2, "target_ma": 20, "ideal_ohms": 150,
+         "ohms": 150, "ma": 20, "power_mw": 60}
+    )
+
+
 def test_rcolor_json_is_utf8_not_escaped(capsys):
     main(["rcolor", "--json", "brown", "black", "red", "gold"])
     assert "kΩ" in capsys.readouterr().out
@@ -60,6 +79,7 @@ def test_rcolor_json_is_utf8_not_escaped(capsys):
         ["divider", "5", "1000", "1000"],
         ["dbm", "--dbm", "20"],
         ["rcolor", "yellow", "violet", "red", "gold"],
+        ["led", "12", "3.2", "10"],
     ],
 )
 def test_text_output_without_flag_is_not_json(capsys, argv):
@@ -74,6 +94,8 @@ def test_text_output_without_flag_is_not_json(capsys, argv):
         ["divider", "--json", "5", "0", "0"],
         ["dbm", "--json", "--mw", "0"],
         ["rcolor", "--json", "brown", "black", "red", "pink"],
+        ["led", "--json", "3", "3.2", "20"],
+        ["led", "--json", "5", "2", "0"],
     ],
 )
 def test_errors_still_exit_2_with_empty_stdout(capsys, argv):
